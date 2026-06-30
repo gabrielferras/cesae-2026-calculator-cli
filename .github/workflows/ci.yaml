@@ -1,17 +1,42 @@
-name: CI(Continuous Integration)
-on: [push, pull_request]
+name: CI (Continuous Integration)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
-    test:
-        runs-on: ubuntu-Latest
-        steps:
-          - uses: actions/checkout@v7
-          
-          
-          - name: Install the latest version of uv
-            uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
-            with:
-              python-version: 3.14.6
-          
-          - name: Run test
-            run: uv run --frozen pytest
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+
+      - name: Run tests
+        run: uv run --frozen pytest
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: gabrielferras/calculator-cli:latest
